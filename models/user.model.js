@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { verifyOTP } from "../services/otp.service";
 
 const userSchema = new mongoose.Schema(
   {
@@ -39,9 +39,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
     },
 
-    googleId: {
+    // For Google login
+    googleId: { type: String, default: null },
+    authProvider: {
       type: String,
-      default: null,
+      enum: ["local", "google"],
+      default: "local",
     },
 
     addresses: [
@@ -63,18 +66,26 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
+    role: {
+      type: String,
+      enum: ["USER", "ADMIN"],
+      default: "USER",
+    },
+
     refreshToken: {
       type: String,
     },
+
+    resetOtp: { type: String },
+    resetOtpExpires: { type: Date },
+
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt automatically
+    timestamps: true, 
   }
 );
 
-//
-// 🔐 PASSWORD HASHING (Pre-save middleware)
-//
+
 userSchema.pre("save", async function (next) {
   // Hash only if password is new or modified
   if (!this.isModified("password")) return next();
@@ -88,63 +99,14 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-//
-// 🔍 INSTANCE METHOD: Compare password
-//
+
+
 userSchema.methods.comparePassword = async function (candidatePassword) {
   if (!this.password) return false; // Google users may not have password
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-//
-// 🔑 INSTANCE METHOD: Generate Access Token (JWT)
-//
-userSchema.methods.generateAccessToken = function () {
-  return jwt.sign(
-    {
-      id: this._id,
-      email: this.email,
-      fullName: this.fullName,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "15m" } // e.g. 15 minutes
-  );
-};
 
-//
-// ♻️ INSTANCE METHOD: Generate Refresh Token
-//
-userSchema.methods.generateRefreshToken = function () {
-  const token = jwt.sign(
-    { id: this._id },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d" } // e.g. 7 days
-  );
-  this.refreshToken = token; // Save it in DB for revocation if needed
-  return token;
-};
-
-//
-// 🧾 INSTANCE METHOD: Generate OTP
-//
-userSchema.methods.generateOTP = function () {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
-  this.otp = otp;
-  this.otpExpires = Date.now() + 10 * 60 * 1000; // valid for 10 minutes
-  return otp;
-};
-
-//
-// 🧹 INSTANCE METHOD: Clear OTP
-//
-userSchema.methods.clearOTP = function () {
-  this.otp = undefined;
-  this.otpExpires = undefined;
-};
-
-//
-// 🧠 STATIC METHOD: Find or create Google user
-//
 userSchema.statics.findOrCreateGoogleUser = async function (profile) {
   const existingUser = await this.findOne({ email: profile.email });
 
@@ -160,9 +122,6 @@ userSchema.statics.findOrCreateGoogleUser = async function (profile) {
   return newUser;
 };
 
-//
-// 🔒 SECURITY: Remove sensitive fields in JSON responses
-//
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
@@ -173,8 +132,5 @@ userSchema.methods.toJSON = function () {
   return obj;
 };
 
-//
-// 🚀 EXPORT MODEL
-//
 const User = mongoose.model("User", userSchema);
 export default User;

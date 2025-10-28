@@ -1,6 +1,5 @@
 import express from 'express';
 import dotenv from 'dotenv'
-import bodyParser from 'body-parser';
 import logger from './config/logger.js';
 import connectDB from './config/db.js';
 
@@ -12,6 +11,10 @@ const app = express();
 
 //Mongodb connection
 connectDB();
+
+// middlewares
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
 
 
 // server setup 
