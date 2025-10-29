@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { verifyOTP } from "../services/otp.service";
+
 
 const userSchema = new mongoose.Schema(
   {
