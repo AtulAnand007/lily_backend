@@ -10,7 +10,7 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendEmail = async ({ to, subject, text, html }) => {
+export const sendEmail = async ({ to, subject, text, html = null, attachments = [] }) => {
   try {
     await transporter.sendMail({
       from: `"Lily 🌱" <${process.env.SMTP_USER}>`,
@@ -18,6 +18,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
       subject,
       text,
       html,
+      attachments,
     });
   } catch (error) {
     console.error("Error sending email:", error);
