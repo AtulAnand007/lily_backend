@@ -28,12 +28,12 @@ export const registerUser = async(req, res) => {
 
         await generateAndSendOTP(user);
 
-        res.json({ message: "Email verification OTP sent to your mail" });
+        res.json({ message: "Password reset OTP sent to your email" });
 
 
     } catch (error) {
-        logger.error("Register error", { message: error.message });
-        res.status(500).json({ message: "Server error" });
+        logger.error("Register failed", { message: error.message });
+        res.status(500).json({ message: " Internal Server error" });
     }
 }
 
