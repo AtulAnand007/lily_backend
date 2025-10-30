@@ -64,7 +64,7 @@ export const VerifyUserotp = async(req, res) => {
     }
 };
 
-
+// otp resend
 export const resendOtp = async(req, res) => {
     try {
         const { email } = req.body;
