@@ -97,7 +97,7 @@ export const resendOtp = async(req, res) => {
             if (!email || !otp) {
                 return res.status(400).json({ message: "Email and OTP are required" });
             }
-            const user = awaitUser.findOne({ email });
+            const user = await User.findOne({ email });
             if (!user) {
                 return res.status(404).json({ message: "User not found" });
             }
