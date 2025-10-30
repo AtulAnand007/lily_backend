@@ -12,6 +12,7 @@ const app = express();
 //Mongodb connection
 connectDB();
 
+
 // middlewares
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
