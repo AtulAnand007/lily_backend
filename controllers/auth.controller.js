@@ -90,6 +90,36 @@ export const resendOtp = async(req, res) => {
     }
 }
 
+// verify resend otp
+/*export const verifyResendOtp = async(req, res) => {
+        try {
+            const { email, otp } = req.body;
+            if (!email || !otp) {
+                return res.status(400).json({ message: "Email and OTP are required" });
+            }
+            const user = awaitUser.findOne({ email });
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            const isOtpMatched = await verifyOTP(user, otp);
+            if (!isOtpMatched) {
+                return res.status(400).json({ message: "Invalid or expired OTP" });
+            }
+
+            logger.info(` Email verified successfully for ${email}`);
+            return res.status(200).json({
+                message: "Email verification successfull"
+
+
+
+            })
+        } catch (error) {
+            logger.error("Otp verification failed", error.message);
+            return res.status(500).json({ message: " Otp verifaction  failed" })
+        }
+    } 
+    */
 // login 
 
 
