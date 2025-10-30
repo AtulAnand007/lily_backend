@@ -28,7 +28,7 @@ export const registerUser = async(req, res) => {
 
         await generateAndSendOTP(user);
 
-        res.json({ message: "Password reset OTP sent to your email" });
+        res.json({ message: "OTP send to your email for verification" });
 
 
     } catch (error) {
