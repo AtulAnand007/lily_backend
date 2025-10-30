@@ -64,6 +64,32 @@ export const VerifyUserotp = async(req, res) => {
     }
 };
 
+
+export const resendOtp = async(req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        await generateAndSendOTP(user);
+
+        logger.info(` New otp sent Successfully on email : ${email}`);
+        return res.status(200).json({
+            message: "New Otp sent Successfully"
+
+        })
+    } catch (error) {
+        logger.error("Failed to resend OTP", { message: error.message });
+        return res.status(500).json({ message: "Failed to resend OTP" });
+    }
+}
+
 // login 
 
 
