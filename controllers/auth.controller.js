@@ -173,7 +173,7 @@ export const login = async(req, res) => {
 }
 
 
-// refresh token 
+// refreshAccess token 
 export const refreshAccesstoken = async(req, res) => {
     try {
         const {
