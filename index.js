@@ -4,6 +4,7 @@ import logger from './config/logger.js';
 import connectDB from './config/db.js';
 import authRouters from './routes/auth.route.js';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 // env configuration 
 dotenv.config();
 
@@ -16,7 +17,11 @@ connectDB();
 // middlewares
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+    origin: "*",
+    credentials: true
+}));
 
 
 
