@@ -1,5 +1,5 @@
 import Redis from "ioredis";
-import logger from "../config/logger.js"; // make sure logger is imported
+import logger from "../config/logger.js";
 
 let redisClient;
 
