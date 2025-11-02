@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRouters from './routes/auth.route.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { connectRedis } from './config/redis.js';
 // env configuration 
 dotenv.config();
 
@@ -13,6 +14,8 @@ const app = express();
 //Mongodb connection
 connectDB();
 
+// Redis connection
+connectRedis()
 
 // middlewares
 app.use(express.urlencoded({ extended: true }));
