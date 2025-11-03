@@ -5,7 +5,7 @@ let redisClient;
 
 export const connectRedis = async() => {
     try {
-        redisClient = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
+        redisClient = new Redis(process.env.REDIS_URL, {
             retryStrategy(times) {
                 return Math.min(times * 2000, 10000);
             },

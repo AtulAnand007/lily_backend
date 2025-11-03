@@ -1,4 +1,3 @@
-import express from 'express';
 import mongoose from "mongoose";
 import logger from "./logger.js";
 import dotenv from 'dotenv';
