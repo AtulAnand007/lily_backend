@@ -4,13 +4,29 @@ import User from "../models/user.model.js";
 
 // get user detail
 
-export const getUserdetail = async(req, res) => {
-        try {
+export const getUserDetail = async(req, res) => {
+    try {
+        const user = req.user;
 
-
-        } catch (error) {
-            logger.error("")
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
 
+        res.status(200).json({
+            success: true,
+            user,
+        });
+
+
+        logger.info(`Fetched details for user ${user._id}`);
+
+    } catch (error) {
+        logger.error(`Failed to fetch user details: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching user details",
+        });
     }
-    // user CRUD operations
+};
+
+// user CRUD operations

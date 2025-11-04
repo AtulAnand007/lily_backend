@@ -3,6 +3,7 @@ import dotenv from 'dotenv'
 import logger from './config/logger.js';
 import connectDB from './config/db.js';
 import authRouters from './routes/auth.route.js';
+import userRoutes from './routes/user.route.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectRedis } from './config/redis.js';
@@ -30,6 +31,7 @@ app.use(cors({
 
 //Routes
 app.use("/api/auth", authRouters);
+app.use("/api/user", userRoutes);
 
 
 // server setup 
