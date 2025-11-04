@@ -18,6 +18,25 @@ const shipmentSchema = new mongoose.Schema({
         default: 'pending'
     },
     estimatedDelivery: { type: Date },
+    shippedAt: { type: Date },
+    deliveredAt: { type: Date },
+
+    shippingAddress: {
+      name: String,
+      mobileNo: String,
+      address: String,
+      locality: String,
+      city: String,
+      state: String,
+      pincode: String,
+      landmark: String,
+    },
+
+    providerData: {
+      apiProvider: String,
+      trackingUrl: String,
+      rawResponse: mongoose.Schema.Types.Mixed,
+    },
 
 }, {timestamps: true})
 
