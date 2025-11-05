@@ -2,7 +2,7 @@
 // user & ADMIN CRUD operations
 import logger from "../config/logger.js";
 import User from "../models/user.model.js";
-
+import cloudinary from "../config/cloudinary.js"
 // get user detail
 
 export const getUserDetail = async(req, res) => {
