@@ -1,4 +1,5 @@
 // get/update profile, manage addresses, change password, admin list users, delete users, etc.
+// user & ADMIN CRUD operations
 import logger from "../config/logger.js";
 import User from "../models/user.model.js";
 
