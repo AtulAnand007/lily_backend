@@ -27,7 +27,7 @@ export const registerUser = async(req, res) => {
             password,
         });
 
-        await generateAndSendOTP(user);
+        await generateAndSendOTP(email, fullName);
 
         return res
             .status(200)
@@ -52,7 +52,7 @@ export const VerifyUserotp = async(req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const isOtpMatched = await verifyOTP(user, otp);
+        const isOtpMatched = await verifyOTP(email, otp, user);
         if (!isOtpMatched) {
             return res.status(400).json({ message: "Invalid or expired OTP" });
         }
@@ -68,7 +68,7 @@ export const VerifyUserotp = async(req, res) => {
 // otp resend
 export const resendOtp = async(req, res) => {
     try {
-        const { email } = req.body;
+        const { email, fullName } = req.body;
         if (!email) {
             return res.status(400).json({ message: "Email is required" });
         }
@@ -78,7 +78,7 @@ export const resendOtp = async(req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        await generateAndSendOTP(user);
+        await generateAndSendOTP(email, fullName);
 
         logger.info(` New otp sent Successfully on email : ${email}`);
         return res.status(200).json({
