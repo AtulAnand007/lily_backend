@@ -66,6 +66,10 @@ const userSchema = new mongoose.Schema({
         enum: ["USER", "ADMIN"],
         default: "USER",
     },
+    profileImage: {
+        type: String,
+        default: "https://via.placeholder.com/150",
+    },
 
     refreshToken: {
         type: String,

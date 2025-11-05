@@ -29,4 +29,15 @@ export const getUserDetail = async(req, res) => {
     }
 };
 
+
+export const updatemYprofile = async(req, res) => {
+    try {
+
+        const updates = req.body;
+
+    } catch (error) {
+
+    }
+}
+
 // user CRUD operations
