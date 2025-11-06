@@ -87,7 +87,6 @@ export const uploadandUpdateImage = async(req, res) => {
 };
 
 
-
 export const updateUserProfile = async(req, res) => {
     try {
         const userId = req.user.id;

@@ -1,11 +1,11 @@
 import { verifyAccessToken } from "../services/token.service.js";
 import User from "../models/user.model.js";
 
-export const authorizeRoles = (...allowedRoles) => {
+export const authorizeRoles = (...roles) => {
 
 
     return (req, res, next) => {
-        if (!req.user || !allowedRoles.includes(req.user.role)) {
+        if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({ message: "Forbidden: Access denied" });
         }
         next();
@@ -17,11 +17,11 @@ export const authenticate = async(req, res, next) => {
     try {
 
         // it will for cookies 
-        const token = req.cookies?.accessToken;
+        const token = req.cookies ? .accessToken;
         //now we will write for Authorization header
 
         const authHeader = req.headers.authorization;
-        const bearerToken = authHeader?.startsWith("Bearer") ? authHeader.split(" ")[1] : null;
+        const bearerToken = authHeader ? .startsWith("Bearer") ? authHeader.split(" ")[1] : null;
 
         const finalToken = token || bearerToken;
         if (!finalToken) {

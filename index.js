@@ -7,6 +7,7 @@ import userRoutes from './routes/user.route.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectRedis } from './config/redis.js';
+import adminRoutes from "./routes/admin.routes.js";
 // env configuration 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use(cors({
 //Routes
 app.use("/api/auth", authRouters);
 app.use("/api/user", userRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 // server setup 
