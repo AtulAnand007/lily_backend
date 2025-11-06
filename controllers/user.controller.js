@@ -85,3 +85,37 @@ export const uploadandUpdateImage = async(req, res) => {
         });
     }
 };
+
+
+
+export const updateUserProfile = async(req, res) => {
+    try {
+        const userId = req.user.id;
+        const { fullName } = req.body;
+
+        const user = await User.findById({ userId });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (fullName) user.fullName = fullName;
+
+
+        await user.save({ validateBeforeSave: false });
+
+        logger.info(`Profile updated successfully for ${user.email}`);
+        return res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            user,
+        });
+
+    } catch (error) {
+        logger.error("Profile update failed", { message: error.message });
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update profile",
+        });
+    }
+}
