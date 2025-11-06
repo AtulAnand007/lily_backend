@@ -30,7 +30,6 @@ export const getUserDetail = async(req, res) => {
     }
 };
 
-
 export const uploadandUpdateImage = async(req, res) => {
     try {
 
