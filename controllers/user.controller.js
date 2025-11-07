@@ -1,5 +1,5 @@
 // get/update profile, manage addresses, change password, admin list users, delete users, etc.
-// user & ADMIN CRUD operations
+// user CRUD operations
 import logger from "../config/logger.js";
 import User from "../models/user.model.js";
 import cloudinary from "../config/cloudinary.js"
@@ -92,7 +92,7 @@ export const updateUserProfile = async(req, res) => {
         const userId = req.user.id;
         const { fullName } = req.body;
 
-        const user = await User.findById({ userId });
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -117,4 +117,14 @@ export const updateUserProfile = async(req, res) => {
             message: "Failed to update profile",
         });
     }
+}
+
+// update user password
+export const updateUserPassword = async(req, res)=>{
+
+}
+
+// update user email -- only for non google auth users
+export const updateUserEmail = async(req, res)=>{
+
 }
