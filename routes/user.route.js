@@ -1,10 +1,23 @@
 import express from "express";
-import { getUserDetail, uploadandUpdateImage, updateUserProfile } from "../controllers/user.controller.js";
+import {
+  getUserDetail,
+  uploadAndUpdateImage,
+  updateUserName,
+  updateUserPassword,
+  updateUserEmail,
+} from "../controllers/user.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 import { upload } from "../middlewares/multer.middleware.js";
 
 router.get("/getUserDetail", authenticate, getUserDetail);
-router.post("/upload-image", authenticate, upload.single("image"), uploadandUpdateImage);
-router.put("/upate-profile", authenticate, updateUserProfile);
+router.post(
+  "/upload-image",
+  authenticate,
+  upload.single("image"),
+  uploadAndUpdateImage
+);
+router.put("/update-name", authenticate, updateUserName);
+router.put("/update-password", authenticate, updateUserPassword);
+router.put("/update-email", authenticate, updateUserEmail)
 export default router;

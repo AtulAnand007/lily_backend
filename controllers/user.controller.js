@@ -2,129 +2,188 @@
 // user CRUD operations
 import logger from "../config/logger.js";
 import User from "../models/user.model.js";
-import cloudinary from "../config/cloudinary.js"
+import cloudinary from "../config/cloudinary.js";
 // get user detail
 
-export const getUserDetail = async(req, res) => {
-    try {
-        const user = req.user;
+export const getUserDetail = async (req, res) => {
+  try {
+    const user = req.user;
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-        res.status(200).json({
-            success: true,
-            user,
-        });
-
-
-        logger.info(`Fetched details for user ${user._id}`);
-
-    } catch (error) {
-        logger.error(`Failed to fetch user details: ${error.message}`);
-        return res.status(500).json({
-            success: false,
-            message: "Server error while fetching user details",
-        });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+
+    logger.info(`Fetched details for user ${user._id}`);
+  } catch (error) {
+    logger.error(`Failed to fetch user details: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching user details",
+    });
+  }
 };
 
-export const uploadandUpdateImage = async(req, res) => {
-    try {
-
-        if (!req.file || !req.file.path) {
-            return res.status(400).json({
-                success: false,
-                message: "No image file uploaded",
-            });
-        }
-
-        const userId = req.user.id;
-        const imageUrl = req.file.path;
-        const publicId = req.file.filename;
-
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found",
-            });
-        }
-
-
-        if (user.profileImagePublicId) {
-            try {
-                await cloudinary.uploader.destroy(user.profileImagePublicId);
-                logger.info("Old profile image deleted from Cloudinary");
-            } catch (err) {
-                logger.warn(`Failed to delete old image: ${err.message}`);
-            }
-        }
-
-
-        user.profileImage = imageUrl;
-        user.profileImagePublicId = publicId;
-
-        await user.save({ validateBeforeSave: false });
-
-        res.status(200).json({
-            success: true,
-            message: "Profile image uploaded & updated successfully",
-            imageUrl,
-            user,
-        });
-
-    } catch (error) {
-        logger.error(`Image upload or update failed: ${error.message}`);
-        res.status(500).json({
-            success: false,
-            message: "Image upload or update failed",
-            error: error.message,
-        });
+export const uploadAndUpdateImage = async (req, res) => {
+  try {
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({
+        success: false,
+        message: "No image file uploaded",
+      });
     }
+
+    const userId = req.user.id;
+    const imageUrl = req.file.path;
+    const publicId = req.file.filename;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (user.profileImagePublicId) {
+      try {
+        await cloudinary.uploader.destroy(user.profileImagePublicId);
+        logger.info("Old profile image deleted from Cloudinary");
+      } catch (err) {
+        logger.warn(`Failed to delete old image: ${err.message}`);
+      }
+    }
+
+    user.profileImage = imageUrl;
+    user.profileImagePublicId = publicId;
+
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "Profile image uploaded & updated successfully",
+      imageUrl,
+      user,
+    });
+  } catch (error) {
+    logger.error(`Image upload or update failed: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: "Image upload or update failed",
+      error: error.message,
+    });
+  }
 };
 
+export const updateUserName = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { fullName } = req.body;
 
-export const updateUserProfile = async(req, res) => {
-    try {
-        const userId = req.user.id;
-        const { fullName } = req.body;
+    const user = await User.findById(userId);
 
-        const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
+    if (fullName) user.fullName = fullName;
 
-        if (fullName) user.fullName = fullName;
+    await user.save({ validateBeforeSave: false });
 
+    logger.info(`Profile updated successfully for ${user.email}`);
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    logger.error("Name update failed", { message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update name",
+    });
+  }
+};
 
-        await user.save({ validateBeforeSave: false });
+// update user password -- only for local/non google user
+export const updateUserPassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-        logger.info(`Profile updated successfully for ${user.email}`);
-        return res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            user,
-        });
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ message: "All fields required" });
+    }
 
-    } catch (error) {
-        logger.error("Profile update failed", { message: error.message });
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update profile",
+    if (newPassword !== confirmNewPassword) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: "New password does not match with confirm new password",
         });
     }
-}
 
-// update user password
-export const updateUserPassword = async(req, res)=>{
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.authProvider === "google") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Google-auth users cannot set or change a password.",
+        });
+    }
 
-}
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
+    }
+
+    // this check is for improved UX experience -- AI suggested
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$/;
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters long.",
+      });
+    }
+
+    if (!strongPasswordRegex.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+      });
+    }
+
+    user.password = newPassword;
+    user.refreshToken = null;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    logger.error("Password update failed", { message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update password",
+    });
+  }
+};
 
 // update user email -- only for non google auth users
-export const updateUserEmail = async(req, res)=>{
+export const updateUserEmail = async (req, res) => {
 
-}
+};
