@@ -17,11 +17,11 @@ export const authenticate = async(req, res, next) => {
     try {
 
         // it will for cookies 
-        const token = req.cookies ? .accessToken;
+        const token = req.cookies ?.accessToken;
         //now we will write for Authorization header
 
         const authHeader = req.headers.authorization;
-        const bearerToken = authHeader ? .startsWith("Bearer") ? authHeader.split(" ")[1] : null;
+        const bearerToken = authHeader ?.startsWith("Bearer") ? authHeader.split(" ")[1] : null;
 
         const finalToken = token || bearerToken;
         if (!finalToken) {
