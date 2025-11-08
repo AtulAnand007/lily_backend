@@ -1,6 +1,7 @@
 import Product from "../models/product.model.js";
-import mongoose from "mongoose";
+
 import logger from "../config/logger.js";
+import cloudinary from "../config/cloudinary.js";
 
 export const createProduct = async(req, res) => {
     try {
@@ -13,16 +14,26 @@ export const createProduct = async(req, res) => {
             return res.status(400).json({ message: "Name, price, and category are required" });
         }
 
+        let imageUrl = "";
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "products",
+                resource_type: "image",
+            })
+
+            imageUrl = result.secure_url;
+        }
+
         const product = await Product.create({
             name,
             description,
             price,
             stock,
             category,
-            images,
+            images: imageUrl ? [imageUrl] : [],
             isFeatured,
         });
-
+        logger.info("Product created successfully");
         res.status(201).json({
             message: "✅ Product created successfully",
             product,
@@ -35,4 +46,8 @@ export const createProduct = async(req, res) => {
         })
         res.status(500).json({ message: "Internal Srever error" })
     }
+}
+
+export const updateProductDetail = async(req, res) => {
+
 }
