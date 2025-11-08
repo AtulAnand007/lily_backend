@@ -3,6 +3,11 @@
 import logger from "../config/logger.js";
 import User from "../models/user.model.js";
 import cloudinary from "../config/cloudinary.js";
+import { sendEmail } from "../config/mailer.js";
+import {
+  changePasswordTemplate,
+  changePasswordText,
+} from "../utils/emailTemplate/changePasswordTemplate.js";
 // get user detail
 
 export const getUserDetail = async (req, res) => {
@@ -120,39 +125,17 @@ export const updateUserPassword = async (req, res) => {
     }
 
     if (newPassword !== confirmNewPassword) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "New password does not match with confirm new password",
-        });
-    }
-
-    const user = await User.findById(userId).select("+password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    if (user.authProvider === "google") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Google-auth users cannot set or change a password.",
-        });
-    }
-
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Current password is incorrect" });
+      return res.status(400).json({
+        success: false,
+        message: "New password does not match with confirm new password",
+      });
     }
 
     // this check is for improved UX experience -- AI suggested
     const strongPasswordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$/;
 
-    if (newPassword.length < 6) {
+    if (newPassword.trim().length < 6) {
       return res.status(400).json({
         success: false,
         message: "Password must be at least 6 characters long.",
@@ -167,9 +150,36 @@ export const updateUserPassword = async (req, res) => {
       });
     }
 
+    const user = await User.findById(userId).select("+password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.authProvider === "google") {
+      return res.status(403).json({
+        success: false,
+        message: "Google-auth users cannot set or change a password.",
+      });
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Current password is incorrect" });
+    }
+
     user.password = newPassword;
     user.refreshToken = null;
     await user.save();
+
+    // email service
+    await sendEmail({
+      to: email,
+      subject: "Password Changed Successfully - Lily 🌱",
+      html: changePasswordTemplate(user.fullName),
+      text: changePasswordText(user.fullName),
+    });
+
     return res.status(200).json({
       success: true,
       message: "Password changed successfully",
@@ -185,5 +195,13 @@ export const updateUserPassword = async (req, res) => {
 
 // update user email -- only for non google auth users
 export const updateUserEmail = async (req, res) => {
+  const userId = req.user;
+  const { email } = req.body;
 
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+    });
+  }
 };
