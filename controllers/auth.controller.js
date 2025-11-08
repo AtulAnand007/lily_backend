@@ -270,7 +270,7 @@ export const requestPasswordReset = async(req, res) => {
                 message: "Email is required",
             });
         }
-        const user = User.findOne({ email });
+        const user = await User.findOne({ email });
         if (!user) {
             // don't reveal that the email does not exist
             return res.status(200).json({
@@ -281,11 +281,11 @@ export const requestPasswordReset = async(req, res) => {
         await generateResetTokenAndSendEmail(user);
         return res.json({
             success: true,
-            message: "Password reset link sent to your email.",
+            message: "If this email exists, a reset link has been sent.",
         });
     } catch (err) {
         logger.error("Reset email error: ", err);
-        if (err.code === "RESET_COOLDOWN") {
+        if (err.code === "RESET_COOLDOWN" || err.code === "RESET_RATE_LIMIT") {
             return res.status(429).json({ success: false, message: err.message });
         }
         return res
@@ -307,7 +307,7 @@ export const resetPassword = async(req, res) => {
         if (newPassword !== confirmPassword) {
             return res
                 .status(400)
-                .json({ success: false, message: "Password do not match." });
+                .json({ success: false, message: "Passwords do not match." });
         }
 
         // validate token
@@ -331,6 +331,7 @@ export const resetPassword = async(req, res) => {
         // clear reset data in redis
         await clearResetData(email);
 
+        logger.info(`Password reset successful for ${email}`);
         return res.json({ success: true, message: "Password reset successfully." });
     } catch (err) {
         logger.error("Reset password error: ", err);
