@@ -7,7 +7,7 @@ import {
     getUserdetail
 
 } from "../controllers/admin.controller.js";
-import { createProduct } from "../controllers/product.controller.js";
+import { createProduct, updateProduct } from "../controllers/product.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 // admin to user
 router.get("/all", authenticate, authorizeRoles("ADMIN"), getAllUser);
@@ -17,4 +17,5 @@ router.delete("/:userId", authenticate, authorizeRoles("ADMIN"), deleteUser);
 // admin to product
 
 router.post("/create", authenticate, authorizeRoles("ADMIN"), upload.single("image"), createProduct);
+router.put("/update-product/:id", authenticate, authorizeRoles("ADMIN"), upload.single("image"), updateProduct);
 export default router;
