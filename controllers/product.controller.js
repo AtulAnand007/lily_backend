@@ -50,9 +50,7 @@ export const createProduct = async(req, res) => {
 };
 
 
-import Product from "../models/product.model.js";
-import cloudinary from "../config/cloudinary.js";
-import logger from "../config/logger.js";
+
 
 export const updateProduct = async(req, res) => {
     try {
