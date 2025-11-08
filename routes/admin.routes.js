@@ -7,9 +7,14 @@ import {
     getUserdetail
 
 } from "../controllers/admin.controller.js";
+import { createProduct } from "../controllers/product.controller.js";
 
-
+// admin to user
 router.get("/all", authenticate, authorizeRoles("ADMIN"), getAllUser);
 router.get("/:userId", authenticate, authorizeRoles("ADMIN"), getUserdetail);
 router.delete("/:userId", authenticate, authorizeRoles("ADMIN"), deleteUser);
+
+// admin to product
+
+router.post("/create", authenticate, authorizeRoles("ADMIN"), createProduct);
 export default router;
