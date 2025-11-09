@@ -68,7 +68,7 @@ export const updateProduct = async(req, res) => {
 
         if (req.file) {
 
-            if (product.images ? .length && product.images[0] ? .public_id) {
+            if (product.images ?.length && product.images[0] ?.public_id) {
                 await cloudinary.uploader.destroy(product.images[0].public_id);
             }
 

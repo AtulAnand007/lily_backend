@@ -99,10 +99,10 @@ export const updateUserName = async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
-    logger.info(`Profile updated successfully for ${user.email}`);
+    logger.info(`Name updated successfully for ${user.email}`);
     return res.status(200).json({
       success: true,
-      message: "Profile updated successfully",
+      message: "Name updated successfully",
       user,
     });
   } catch (error) {
@@ -174,7 +174,7 @@ export const updateUserPassword = async (req, res) => {
 
     // email service
     await sendEmail({
-      to: email,
+      to: user.email,
       subject: "Password Changed Successfully - Lily 🌱",
       html: changePasswordTemplate(user.fullName),
       text: changePasswordText(user.fullName),
@@ -195,13 +195,45 @@ export const updateUserPassword = async (req, res) => {
 
 // update user email -- only for non google auth users
 export const updateUserEmail = async (req, res) => {
-  const userId = req.user;
-  const { email } = req.body;
+  try {
+    const userId = req.user.id;
+    const { enteredEmail } = req.body;
 
-  if (!email) {
-    return res.status(400).json({
+    if (!enteredEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+    const existingUser = await User.findOne({email: enteredEmail});
+    if(existingUser){
+      return res.status(400).json({
+        success: false,
+        message: "User already exist with this email address"
+      })
+    }
+    const user = await User.findById(userId);
+    if(!user){
+      return res.status(400).json({
+        success: false,
+        message: "User does not exist"
+      })
+    }
+    if(user.authProvider==="google"){
+      return res.status(403).json({
+        success: false,
+        message: "Google-auth users cannot set or change a password.",
+      });
+    }
+
+    user.email = enteredEmail
+    user.refreshToken = null;
+    await user.save();    
+  } catch (error) {
+    logger.error("Email update failed", {message: error.message})
+    return res.status(500).json({
       success: false,
-      message: "Email is required",
-    });
+      message: "Failed to update email"
+    })
   }
 };

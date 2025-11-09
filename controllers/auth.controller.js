@@ -148,7 +148,7 @@ export const resendOtp = async (req, res) => {
 };
 
 
-
+// login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -158,7 +158,7 @@ export const login = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({email}).select("+password");
     if (!user) {
       return res.status(404).json({ message: " Invalid user" });
     }
@@ -315,6 +315,7 @@ export const requestPasswordReset = async (req, res) => {
 // step2: Reset Password
 export const resetPassword = async (req, res) => {
   try {
+    // email & token will be fetched from params by frontend and send in body to backend
     const { email, token, newPassword, confirmPassword } = req.body;
 
     if (!email || !token || !newPassword || !confirmPassword) {
