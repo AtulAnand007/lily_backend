@@ -1,5 +1,6 @@
 import { verifyAccessToken } from "../services/token.service.js";
 import User from "../models/user.model.js";
+import logger from "../config/logger.js"
 
 export const authorizeRoles = (...roles) => {
 

@@ -103,10 +103,10 @@ export const updateUserName = async(req, res) => {
 
         await user.save({ validateBeforeSave: false });
 
-        logger.info(`Profile updated successfully for ${user.email}`);
+        logger.info(`Name updated successfully for ${user.email}`);
         return res.status(200).json({
             success: true,
-            message: "Profile updated successfully",
+            message: "Name updated successfully",
             user,
         });
     } catch (error) {
@@ -198,41 +198,36 @@ export const updateUserPassword = async(req, res) => {
 
 // update user email -- only for non google auth users
 
-
 export const updateUserEmail = async(req, res) => {
     try {
         const userId = req.user.id;
         const { newemail } = req.body;
 
         if (!newemail) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is required",
-            });
+            return res.status(400).json({ success: false, message: "Email is required" });
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(newemail)) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide a valid email address.",
-            });
+            return res.status(400).json({ success: false, message: "Please provide a valid email address." });
         }
 
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+
+        if (user.authProvider === "google") {
+            return res.status(403).json({
                 success: false,
-                message: "User not found",
+                message: "Google account users cannot manually update their email.",
             });
         }
 
-        const existingUser = await User.findOne({ email: newemail });
-        if (existingUser) {
-            return res.status(409).json({
-                success: false,
-                message: "Email is already in use.",
-            });
+        const existingemail = await User.findOne({ email: newemail });
+        if (existingemail) {
+            return res.status(409).json({ success: false, message: "Email is already in use." });
         }
 
         user.pendingEmail = newemail;
@@ -240,7 +235,6 @@ export const updateUserEmail = async(req, res) => {
 
 
         const token = generateEmailVerifyToken(user, newemail);
-
         const verificationUrl = `${process.env.CLIENT_URL}/verify-email-update?token=${token}`;
 
         await sendEmail({
@@ -251,18 +245,14 @@ export const updateUserEmail = async(req, res) => {
         });
 
         logger.info("Email verification link sent successfully");
-        return res.status(200).json({
-            success: true,
-            message: "Verification link sent successfully. Please check your new email.",
-        });
+        res.status(200).json({ success: true, message: "Verification link sent successfully" });
     } catch (error) {
-        logger.error("Email verification error", { message: error.message });
-        return res.status(500).json({
-            success: false,
-            message: "Failed to send verification link",
-        });
+        logger.error("Email verification error:", error);
+        res.status(500).json({ message: "Failed to send verification link" });
     }
 };
+
+
 
 
 export const verifyUpdatedEmail = async(req, res) => {
