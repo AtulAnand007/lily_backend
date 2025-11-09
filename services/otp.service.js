@@ -1,206 +1,194 @@
 import crypto from "crypto";
 import { sendEmail } from "../config/mailer.js";
 import { getRedisClient } from "../config/redis.js";
-import {verifyEmailTemplate, verifyEmailText} from "../utils/emailTemplate/verifyEmailTemplate.js"
+import {
+  verifyEmailTemplate,
+  verifyEmailText,
+} from "../utils/emailTemplate/verifyEmailTemplate.js";
+import logger from "../config/logger.js";
+
+const OTP_EXPIRY = 10 * 60; // 10 minutes
+const OTP_COOLDOWN = 60; // 1 minute between resend
+const OTP_MAX_REQUESTS = 3; // 3 times in 10 minutes
+const OTP_MAX_FAILED_ATTEMPTS = 5; // Max wrong tries before lock
+const OTP_PREFIX = "otp:register"; // Prefix for registration OTP
 
 export const generateAndSendOTP = async (email, fullName) => {
   const redis = getRedisClient();
   if (!redis) throw new Error("Redis not initialized");
 
-  const otpKey = `otp:${email}`;
-  const countKey = `otp:count:${email}`;
-  const lastRequestKey = `otp:last_request:${email}`;
+  //Step 1: Prevent locked users
+  const lockKey = `${OTP_PREFIX}:lock:${email}`;
+  const isLocked = await redis.get(lockKey);
+  if (isLocked) {
+    const err = new Error(
+      "Too many failed attempts. Please try again after 10 minutes."
+    );
+    err.code = "ACCOUNT_LOCKED";
+    throw err;
+  }
 
-  // check last resend time
+  const otpKey = `${OTP_PREFIX}:${email}`;
+  const countKey = `${OTP_PREFIX}:count:${email}`;
+  const lastRequestKey = `${OTP_PREFIX}:last:${email}`;
+
+  // check last resend time (cooldown check)
   const lastRequest = await redis.get(lastRequestKey);
   if (lastRequest) {
-    const remaining = 60 - (Date.now() - parseInt(lastRequest)) / 1000;
+    const remaining =
+      OTP_COOLDOWN - (Date.now() - parseInt(lastRequest)) / 1000;
     if (remaining > 0) {
-      throw new Error(
-        `Please wait ${Math.ceil(remaining)}s before resending OTP.`
+      const seconds = Math.ceil(remaining);
+      const err = new Error(
+        `Please wait ${seconds}s before requesting a new OTP.`
       );
+      err.code = "OTP_COOLDOWN";
+      throw err;
     }
   }
 
-  // check if OTP exists & valid(reuse same OTP)
-  let otp = await redis.get(otpKey);
-  if (otp) {
-    console.log("Returning existing OTP(still valid)");
-  } else {
-    // check rate limit
-    const count = await redis.get(countKey);
-    if (count && parseInt(count) >= 3) {
-      throw new Error(
-        "Maximum OTP requests reached. Try again after 10 minutes"
-      );
-    }
-
-    // generate new OTP
-    otp = crypto.randomInt(100000, 999999).toString();
-    const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
-
-    await redis.set(otpKey, hashedOtp, "EX", 10*60) // 10 min expiry
-
-    // increment counter
-    await redis.incr(countKey)
-    await redis.expire(countKey, 10*60) // 10 min window
+  // --- RATE LIMIT check ---
+  const count = await redis.get(countKey);
+  if (count && parseInt(count) >= OTP_MAX_REQUESTS) {
+    const err = new Error(
+      "Maximum OTP requests reached. Try again after 10 minutes."
+    );
+    err.code = "OTP_RATE_LIMIT";
+    throw err;
   }
 
+  // generate new OTP
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
+  const pipeline = redis.multi();
+  pipeline.set(otpKey, hashedOtp, "EX", OTP_EXPIRY); // 10 min expiry
+  pipeline.incr(countKey);
+  pipeline.expire(countKey, OTP_EXPIRY); // 10 min window
   // update last request timestamp
-  await redis.set(lastRequestKey, Date.now().toString(), "EX", 60) // 1 min cooldown
+  pipeline.set(lastRequestKey, Date.now().toString(), "EX", OTP_COOLDOWN); // 1 min cooldown
+  await pipeline.exec();
 
   // send email
-  await sendEmail({
-    to: email,
-    subject: "Verify your email - Lily 🌱",
-    html: verifyEmailTemplate(fullName, otp),
-    text: verifyEmailText(fullName, otp)
-  })
-  console.log(`OTP sent to ${email}`);
-  return otp;
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Verify your email - Lily 🌱",
+      html: verifyEmailTemplate(fullName, otp),
+      text: verifyEmailText(fullName, otp),
+    });
+    logger.info(`OTP sent successfully to ${email}`);
+  } catch (err) {
+    // Cleanup Redis if email fails
+    await redis.del(otpKey, countKey, lastRequestKey);
+    logger.error(`Failed to send OTP to ${email}: ${err.message}`);
+    const emailError = new Error(
+      "Failed to send verification email. Please try again."
+    );
+    emailError.code = "EMAIL_SEND_FAILED";
+    throw emailError;
+  }
+
+  return {
+    success: true,
+    message: "OTP send successfully",
+    email,
+  };
 };
 
-// verifyOTP service 
-export const verifyOTP = async(email, enteredOtp, user) =>{
-  const redis = getRedisClient()
-  if(!redis) throw new Error("Redis not initialized")
-  
-  const otpKey = `otp:${email}`
-  const storedHashedOtp = await redis.get(otpKey)
+// verifyOTP service
+export const verifyOTP = async (email, enteredOtp, user) => {
+  const redis = getRedisClient();
+  if (!redis) throw new Error("Redis not initialized");
 
-  if(!storedHashedOtp) return false;
+  const otpKey = `${OTP_PREFIX}:${email}`;
+  const failKey = `${OTP_PREFIX}:fail:${email}`;
+  const countKey = `${OTP_PREFIX}:count:${email}`;
+  const lastKey = `${OTP_PREFIX}:last:${email}`;
+
+  // --- Validation check for OTP input ---
+  if (!enteredOtp || !/^\d{6}$/.test(enteredOtp)) {
+    return {
+      success: false,
+      code: "INVALID_FORMAT",
+      message: "Invalid OTP format.",
+    };
+  }
+
+  const storedHashedOtp = await redis.get(otpKey);
+
+  if (!storedHashedOtp) {
+    logger.warn(`OTP verification failed for ${email}: OTP expired or missing`);
+    return {
+      success: false,
+      code: "OTP_EXPIRED",
+      message: "OTP expired or not found.",
+    };
+  }
 
   const hashedEnteredOtp = crypto
     .createHash("sha256")
     .update(enteredOtp)
-    .digest("hex")
-  
-  if(storedHashedOtp !== hashedEnteredOtp) return false
+    .digest("hex");
+
+  if (storedHashedOtp !== hashedEnteredOtp) {
+    const failCount = await redis.incr(failKey);
+    if (failCount === 1) await redis.expire(failKey, OTP_EXPIRY);
+
+    if (failCount >= OTP_MAX_FAILED_ATTEMPTS) {
+      //Step 2: Lock user for 10 minutes
+      const lockKey = `${OTP_PREFIX}:lock:${email}`;
+      await redis.set(lockKey, "LOCKED", "EX", OTP_EXPIRY); // lock for same as OTP_EXPIRY (10 min)
+      await redis.del(otpKey); // invalidate current OTP
+
+      logger.warn(
+        `User ${email} locked for ${
+          OTP_EXPIRY / 60
+        } minutes after ${failCount} failed attempts`
+      );
+
+      return {
+        success: false,
+        code: "ACCOUNT_LOCKED",
+        message: "Too many incorrect attempts. You are locked for 10 minutes.",
+      };
+    }
+
+    logger.warn(
+      `Incorrect OTP for ${email}. Attempts: ${failCount}/${OTP_MAX_FAILED_ATTEMPTS}`
+    );
+    return {
+      success: false,
+      code: "OTP_INCORRECT",
+      message: `Incorrect OTP. You have ${
+        OTP_MAX_FAILED_ATTEMPTS - failCount
+      } attempts left.`,
+    };
+  }
 
   // OTP verified - clear Redis data
-  await redis.del(otpKey)
-  await redis.del(`otp:last_request:${email}`)
-  await redis.del(`otp:count:${email}`)
+  const pipeline = redis.multi();
+  pipeline.del(otpKey);
+  pipeline.del(countKey);
+  pipeline.del(lastKey);
+  pipeline.del(failKey);
+  await pipeline.exec();
 
-  // update user in DB
-  user.isVerified = true;
-  await user.save();
+  // --- Update user ---
+  try {
+    user.isVerified = true;
+    await user.save();
+    logger.info(`OTP verified successfully for ${email}`);
+  } catch (err) {
+    logger.error(
+      `Failed to update user verification for ${email}: ${err.message}`
+    );
+    return {
+      success: false,
+      code: "DB_ERROR",
+      message: "Verification succeeded but could not update user record.",
+    };
+  }
 
-  return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// otp generation & send email function
-// export const generateAndSendOTP = async (user) => {
-//   const otp = crypto.randomInt(100000, 999999).toString();
-//   const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
-//   const otpExpires = Date.now() + 10 * 60 * 1000;
-
-//   user.otp = hashedOTP;
-//   user.otpExpires = otpExpires;
-//   await user.save();
-
-//   await sendEmail({
-//     to: user.email,
-//     subject: "Verify your email - Lily 🌱",
-//     html: `
-//     <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-//       <div style="max-width: 600px; margin: auto; background: #fff; padding: 30px; border-radius: 8px;">
-//         <p style="font-size: 16px;"><strong>Greeting's, ${user.fullName}</strong></p>
-//         <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 10px;">
-//           <p>Your verification code is: <b style="font-size: 14px;">${otp}</b></p>
-//           <p>It is valid for 10 minutes.</p>
-//           <p>Thank you for registering with Lily!</p>
-//         </div>
-//         <p style="margin-top: 30px; font-size: 12px; color: #888;">This email was sent automatically generated by Lily backend team.</p>
-//       </div>
-//     </div>
-//   `
-//     // text: `Hi ${user.fullName},\n\nYour verification code is: ${otp}
-//     // \nIt is valid for 10 minutes.
-//     // \n\nThank you for registering with Lily!`,
-//   });
-
-//   console.log(`OTP sent to ${user.email}`);
-//   return otp;
-// };
-
-// otp verification function
-// export const verifyOTP = async (user, enteredOtp) => {
-//   const hashedEnteredOtp = crypto
-//     .createHash("sha256")
-//     .update(enteredOtp)
-//     .digest("hex");
-
-//   if (
-//     user.otp !== hashedEnteredOtp ||
-//     !user.otpExpires ||
-//     user.otpExpires < Date.now()
-//   ) {
-//     return false;
-//   }
-
-//   user.otp = undefined;
-//   user.otpExpires = undefined;
-//   user.isVerified = true;
-//   await user.save();
-
-//   return true;
-// };
-
-// Generate and send OTP for forgot password
-// export const generateAndSendResetOTP = async (user) => {
-//   const otp = crypto.randomInt(100000, 999999).toString();
-//   const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
-//   const otpExpires = Date.now() + 10 * 60 * 1000;
-
-//   user.resetOtp = hashedOTP;
-//   user.resetOtpExpires = otpExpires;
-//   await user.save();
-
-//   await sendEmail({
-//     to: user.email,
-//     subject: "Password Reset Code - Lily 🌱",
-//     text: `Hi ${user.fullName},\n\nYour password reset code is: ${otp}
-//     \nIt will expire in 10 minutes.
-//     \n\nIf you didn’t request this, please contact us.`,
-//   });
-
-//   console.log(`Reset OTP sent to ${user.email}`);
-//   return otp;
-// };
-
-// // Verify reset OTP
-// export const verifyResetOTP = async (user, enteredOtp) => {
-//   const hashedEnteredOtp = crypto
-//     .createHash("sha256")
-//     .update(enteredOtp)
-//     .digest("hex");
-
-//   if (
-//     user.resetOtp !== hashedEnteredOtp ||
-//     !user.resetOtpExpires ||
-//     user.resetOtpExpires < Date.now()
-//   ) {
-//     return false;
-//   }
-
-//   user.resetOtp = undefined;
-//   user.resetOtpExpires = undefined;
-//   await user.save();
-
-//   return true;
-// };
+  return { success: true, message: "OTP verified successfully." };
+};
