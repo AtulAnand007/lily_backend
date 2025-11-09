@@ -62,13 +62,21 @@ export const generateResetTokenAndSendEmail = async (user) => {
   }/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
 
   // Send email
-  await sendEmail({
-    to: email,
-    subject: "Reset Your Password - Lily 🌱",
-    html: resetPasswordTemplate(fullName, resetUrl),
-    text: resetPasswordText(fullName, resetUrl),
-  });
-
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Reset Your Password - Lily 🌱",
+      html: resetPasswordTemplate(fullName, resetUrl),
+      text: resetPasswordText(fullName, resetUrl),
+    });
+  } catch (err) {
+    await redis.del(resetKey, rateKey, countKey);
+    throw {
+      code: "EMAIL_SEND_FAILED",
+      message: "Failed to send reset email. Please try again.",
+    };
+  }
+  
   return { success: true, message: "Password reset email send successfully." };
 };
 
