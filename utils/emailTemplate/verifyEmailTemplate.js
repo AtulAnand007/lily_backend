@@ -1,10 +1,10 @@
-import { baseTemplate } from './baseTemplate.js';
+/*import { baseTemplate } from './baseTemplate.js';
 
 export const verifyEmailTemplate = (fullName, otp) =>
-  baseTemplate({
-    title: 'Verify Your Email - Lily',
-    userName: fullName,
-    bodyContent: `
+    baseTemplate({
+        title: 'Verify Your Email - Lily',
+        userName: fullName,
+        bodyContent: `
       <p>Hi ${fullName || "there"},</p>
       <p>
         Thank you for registering with <b>Lily</b>! To complete your signup, please use the verification code below.
@@ -21,7 +21,7 @@ export const verifyEmailTemplate = (fullName, otp) =>
       <p>Welcome to the Lily family 🌱</p>
       <p>— The Lily Team</p>
     `,
-  });
+    });
 
 export const verifyEmailText = (fullName, otp) => `
 Hi ${fullName || "there"},
@@ -34,6 +34,48 @@ It’s valid for 10 minutes.
 Enter this code in the Lily app or website to verify your email.
 
 If you didn’t request this, ignore this message.
+
+— The Lily Team 🌱
+Support: random@gmail.com
+`; *
+*/
+
+import { baseTemplate } from './baseTemplate.js';
+
+export const verifyEmailLinkTemplate = (fullName, verifyLink) =>
+    baseTemplate({
+        title: 'Verify Your Email - Lily',
+        userName: fullName,
+        bodyContent: `
+      <p>Hi ${fullName || "there"},</p>
+      <p>
+        Thank you for joining <b>Lily</b> 🌱! To complete your registration, please verify your email address by clicking the button below.
+      </p>
+      <p style="text-align:center;margin:20px 0;">
+        <a href="${verifyLink}" 
+           style="background:#27ae60;color:white;padding:12px 22px;
+                  border-radius:8px;text-decoration:none;font-weight:bold;">
+          Verify My Email
+        </a>
+      </p>
+      <p>This link will expire in <b>15 minutes</b>.</p>
+      <p>If you didn’t sign up for Lily, you can safely ignore this email.</p>
+      <p>Welcome aboard 🌸</p>
+      <p>— The Lily Team</p>
+    `,
+    });
+
+export const verifyEmailLinkText = (fullName, verifyLink) => `
+Hi ${fullName || "there"},
+
+Thanks for joining Lily!
+
+To verify your email address, click the link below:
+${verifyLink}
+
+This link will expire in 15 minutes.
+
+If you didn’t request this, please ignore this message.
 
 — The Lily Team 🌱
 Support: random@gmail.com

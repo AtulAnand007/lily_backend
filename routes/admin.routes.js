@@ -9,6 +9,7 @@ import {
 } from "../controllers/admin.controller.js";
 import { createProduct, updateProduct } from "../controllers/product.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+
 // admin to user
 router.get("/all", authenticate, authorizeRoles("ADMIN"), getAllUser);
 router.get("/:userId", authenticate, authorizeRoles("ADMIN"), getUserdetail);
