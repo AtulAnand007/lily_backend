@@ -68,7 +68,7 @@ export const updateProduct = async(req, res) => {
 
         if (req.file) {
 
-            if (product.images ?.length && product.images[0] ?.public_id) {
+            if (product.images ? .length && product.images[0] ? .public_id) {
                 await cloudinary.uploader.destroy(product.images[0].public_id);
             }
 
@@ -100,3 +100,41 @@ export const updateProduct = async(req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+export const deleteProduct = async(req, res) => {
+    try {
+        if (req.user.role !== "ADMIN") {
+            return res.status(403).json({
+                success: false,
+                message: "Admin accessed only"
+            })
+        }
+        const productId = req.params.prodId;
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: "Product does not exist" });
+        }
+
+        //this is one method but it is quit expensive 
+        /*if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+                cloudinary.destroy(image.public_id);
+            }
+        } */
+
+        if (product.images ? .length > 0 && product.images[0] ? .public_id) {
+            const publicIds = product.images.map(img => img.public_id);
+            await cloudinary.api.delete_resources(publicIds);
+        }
+
+        await product.deleteOne();
+        logger.info("Product deleted successfully");
+        res.status(200).json({ message: "Product deleted successfully" });
+
+    } catch (error) {
+
+        logger.error("Product deletion failed", { message: error.message });
+        res.status(500).json({ message: "Internal Server Error" });
+
+    }
+}

@@ -8,7 +8,7 @@ import {
     getDashboardOverview
 
 } from "../controllers/admin.controller.js";
-import { createProduct, updateProduct } from "../controllers/product.controller.js";
+import { createProduct, deleteProduct, updateProduct } from "../controllers/product.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 // admin to user
@@ -20,5 +20,10 @@ router.delete("/:userId", authenticate, authorizeRoles("ADMIN"), deleteUser);
 
 router.post("/create", authenticate, authorizeRoles("ADMIN"), upload.single("image"), createProduct);
 router.put("/update-product/:id", authenticate, authorizeRoles("ADMIN"), upload.single("image"), updateProduct);
+router.delete("/delete/:prodId", authenticate, authorizeRoles("ADMIN"), deleteProduct)
+
+
+// admin to admin
 router.get("/dashboard", authenticate, authorizeRoles("ADMIN"), getDashboardOverview);
+
 export default router;
