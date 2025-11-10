@@ -4,7 +4,8 @@ const router = express.Router();
 import {
     getAllUser,
     deleteUser,
-    getUserdetail
+    getUserdetail,
+    getDashboardOverview
 
 } from "../controllers/admin.controller.js";
 import { createProduct, updateProduct } from "../controllers/product.controller.js";
@@ -19,4 +20,5 @@ router.delete("/:userId", authenticate, authorizeRoles("ADMIN"), deleteUser);
 
 router.post("/create", authenticate, authorizeRoles("ADMIN"), upload.single("image"), createProduct);
 router.put("/update-product/:id", authenticate, authorizeRoles("ADMIN"), upload.single("image"), updateProduct);
+router.get("/dashboard", authenticate, authorizeRoles("ADMIN"), getDashboardOverview);
 export default router;
