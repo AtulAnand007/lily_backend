@@ -18,8 +18,16 @@ router.delete("/:userId", authenticate, authorizeRoles("ADMIN"), deleteUser);
 
 // admin to product
 
-router.post("/create", authenticate, authorizeRoles("ADMIN"), upload.single("image"), createProduct);
-router.put("/update-product/:id", authenticate, authorizeRoles("ADMIN"), upload.single("image"), updateProduct);
+router.post("/create", authenticate, authorizeRoles("ADMIN"),
+    async(req, res, next) => {
+        req.uploadType = "product_image",
+            next();
+    },
+    upload.single("image"), createProduct);
+router.put("/update-product/:id", authenticate, authorizeRoles("ADMIN"), async() => {
+    req.uploadType = "product_image"
+    next();
+}, upload.single("image"), updateProduct);
 router.delete("/delete/:prodId", authenticate, authorizeRoles("ADMIN"), deleteProduct)
 
 

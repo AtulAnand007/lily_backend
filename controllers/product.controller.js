@@ -18,13 +18,9 @@ export const createProduct = async(req, res) => {
         let images = [];
 
         if (req.file) {
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "products",
-            });
-
             images.push({
-                url: result.secure_url,
-                public_id: result.public_id,
+                url: req.file.path,
+                public_id: req.file.filename,
             });
         }
 
@@ -72,14 +68,9 @@ export const updateProduct = async(req, res) => {
             }
 
 
-            const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "products",
-            });
-
-            // Replace the image array
             updates.images = [{
-                url: result.secure_url,
-                public_id: result.public_id,
+                url: req.file.path,
+                public_id: req.file.filename,
             }, ];
         }
 
