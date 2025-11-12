@@ -15,6 +15,10 @@ router.get("/getUserDetail", authenticate, getUserDetail);
 router.post(
     "/upload-image",
     authenticate,
+    (req, res, next) => {
+        req.uploadType = "users_profile";
+        next()
+    },
     upload.single("image"),
     uploadAndUpdateImage
 );

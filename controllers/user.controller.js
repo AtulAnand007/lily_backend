@@ -64,13 +64,15 @@ export const uploadAndUpdateImage = async(req, res) => {
                 logger.warn(`Failed to delete old profile image: ${err.message}`);
             }
         }
-        const result = await cloudinary.uploader.upload(req.file.path, {
+        // Atul fucking babes we do not need this because we are using multer-storage-cloudnary to
+        // iske wajah se controller ke start hone se pahle wo upload ho jayega cloudinary main
+        /*const result = await cloudinary.uploader.upload(req.file.path, {
             folder: "user_profiles",
             transformation: [{width: 500, height: 500, crop: "limit"}],
-        })
+        })*/
 
-        user.profileImage = result.secure_url;
-        user.profileImagePublicId = result.public_id;
+        user.profileImage = req.file.path;
+        user.profileImagePublicId = req.file.filename;
 
         await user.save({ validateBeforeSave: false });
 

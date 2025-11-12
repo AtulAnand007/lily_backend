@@ -49,7 +49,6 @@ export const createProduct = async(req, res) => {
     }
 };
 
-
 export const updateProduct = async(req, res) => {
     try {
         if (req.user.role !== "ADMIN") {
