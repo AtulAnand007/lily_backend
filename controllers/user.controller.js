@@ -12,8 +12,8 @@ import { generateEmailVerifyToken } from "../services/token.service.js";
 import { verifyEmailLinkTemplate, verifyEmailLinkText } from "../utils/emailTemplate/verifyEmailTemplate.js";
 import { JWT_CONFIG } from "../config/jwt.js";
 import jwt from "jsonwebtoken";
-// get user detail
 
+// get user detail
 export const getUserDetail = async(req, res) => {
     try {
         const user = req.user;
@@ -47,8 +47,6 @@ export const uploadAndUpdateImage = async(req, res) => {
         }
 
         const userId = req.user.id;
-        const imageUrl = req.file.path;
-        const publicId = req.file.filename;
 
         const user = await User.findById(userId);
         if (!user) {
@@ -63,12 +61,16 @@ export const uploadAndUpdateImage = async(req, res) => {
                 await cloudinary.uploader.destroy(user.profileImagePublicId);
                 logger.info("Old profile image deleted from Cloudinary");
             } catch (err) {
-                logger.warn(`Failed to delete old image: ${err.message}`);
+                logger.warn(`Failed to delete old profile image: ${err.message}`);
             }
         }
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "user_profiles",
+            transformation: [{width: 500, height: 500, crop: "limit"}],
+        })
 
-        user.profileImage = imageUrl;
-        user.profileImagePublicId = publicId;
+        user.profileImage = result.secure_url;
+        user.profileImagePublicId = result.public_id;
 
         await user.save({ validateBeforeSave: false });
 
