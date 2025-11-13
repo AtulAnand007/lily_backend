@@ -23,14 +23,10 @@ export const createCategory = async (req, res) => {
     });
 
     // upload image if provided
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "categories",
-        transformation: [{ width: 500, height: 500, crop: "limit" }],
-      });
+    if (req.file?.path && req.file?.filename) {
       category.image = {
-        url: result.secure_url,
-        public_id: result.public_id,
+        url: req.file.path,
+        public_id: req.file.filename,
       };
     }
 
@@ -58,38 +54,37 @@ export const updateCategory = async (req, res) => {
     const category = await Category.findById(id);
     if (!category) {
       return res.status(404).json({
+        success: false,
         message: "Category not found",
       });
     }
+
     // update fields
     if (name) category.name = name;
     if (description) category.description = description;
     if (parentCategory !== undefined) category.parentCategory = parentCategory;
     if (isActive !== undefined) category.isActive = isActive;
 
-    // handle image update
-    if (req.file) {
-      // delete old image
+    // handle image update only if a new file was uploaded
+    if (req.file?.path && req.file?.filename) {
+      // delete old image if it exists
       if (category.image?.public_id) {
         try {
-            await cloudinary.uploader.destroy(category.image.public_id);
-            logger.info("Old category image deleted from Cloudinary");
-        } catch (error) {
-            logger.warn(`Failed to delete old category image: ${err.message}`);
+          await cloudinary.uploader.destroy(category.image.public_id);
+          logger.info("Old category image deleted from Cloudinary");
+        } catch (err) {
+          logger.warn(`Failed to delete old category image: ${err.message}`);
         }
       }
+
+      // assign new image
+      category.image = {
+        url: req.file.path,
+        public_id: req.file.filename,
+      };
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: "categories",
-      transformation: [{ width: 500, height: 500, crop: "limit" }],
-    });
-    category.image = {
-      url: result.secure_url,
-      public_id: result.public_id,
-    };
-
-    await category.save({validateBeforeSave: false});
+    await category.save({ validateBeforeSave: false });
 
     logger.info(`Category updated: ${category.name}`);
     res.status(200).json({
@@ -105,7 +100,6 @@ export const updateCategory = async (req, res) => {
   }
 };
 
+
 // delete category -- admin only
-export const deleteCategory = async(req, res)=>{
-    
-}
+export const deleteCategory = async (req, res) => {};
