@@ -119,7 +119,7 @@ export const getDashboardOverview = async(req, res) => {
         }, ])
 
 
-        const totalRevenue = totalRevenueData[0] ? .total || 0;
+        const totalRevenue = totalRevenueData[0] ?.total || 0;
 
         return res.status(200).json({
             success: true,

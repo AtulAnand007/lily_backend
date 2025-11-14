@@ -1,23 +1,31 @@
 import logger from "../config/logger.js";
 import Category from "../models/category.model.js";
 import cloudinary from "../config/cloudinary.js";
+import mongoose from "mongoose";
 
 // create category -- admin only
 export const createCategory = async (req, res) => {
   try {
     const { name, description, parentCategory, isActive } = req.body;
 
-    // check for duplicate category
-    const existing = await Category.findOne({ name });
-    if (existing) {
+    if(!name || typeof name !== "string"){
       return res.status(400).json({
+        success: false,
+        message: "Category name is required."
+      })
+    }
+
+    // check for duplicate category
+    const existing = await Category.findOne({ name: name.trim() });
+    if (existing) {
+      return res.status(409).json({
         success: false,
         message: "Category name must be unique",
       });
     }
     const category = new Category({
-      name,
-      description,
+      name: name.trim(),
+      description: description?.trim() || "",
       parentCategory: parentCategory || null,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -40,7 +48,7 @@ export const createCategory = async (req, res) => {
     logger.error(`Error creating category: ${error.message}`);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Internal Server error",
     });
   }
 };
@@ -92,14 +100,39 @@ export const updateCategory = async (req, res) => {
       data: category,
     });
   } catch (error) {
-    logger.error(`Error updating category: ${error.message}`);
+    logger.error(`Error while updating category: ${error.message}`);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Server error while updating category",
     });
   }
 };
 
-
 // delete category -- admin only
-export const deleteCategory = async (req, res) => {};
+export const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if(!mongoose.Types.ObjectId.isValid(id)){
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category ID"
+      })
+    }
+
+    const category = await Category.findById(id);
+    if (!category) {
+      res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+
+  } catch (error) {
+    logger.error(`Error while deleting category: ${error.message}`)
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting category"
+    })
+  }
+};

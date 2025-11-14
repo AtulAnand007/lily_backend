@@ -11,11 +11,11 @@ import {
 import { generateEmailVerifyToken } from "../services/token.service.js";
 import {
   verifyEmailLinkTemplate,
-  verifyEmailLinkText,
-} from "../utils/emailTemplate/verifyEmailTemplate.js";
+  verifyEmailLinkText
+} from "../utils/emailTemplate/verifyUpdateEmailTemplate.js";
 import { JWT_CONFIG } from "../config/jwt.js";
 import jwt from "jsonwebtoken";
-import { info } from "winston";
+
 
 // get user detail
 export const getUserDetail = async (req, res) => {

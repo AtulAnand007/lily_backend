@@ -63,7 +63,7 @@ export const updateProduct = async(req, res) => {
 
         if (req.file) {
 
-            if (product.images ? .length && product.images[0] ? .public_id) {
+            if (product.images ?.length && product.images[0] ?.public_id) {
                 await cloudinary.uploader.destroy(product.images[0].public_id);
             }
 
@@ -112,7 +112,7 @@ export const deleteProduct = async(req, res) => {
             }
         } */
 
-        if (product.images ? .length > 0 && product.images[0] ? .public_id) {
+        if (product.images ?.length > 0 && product.images[0] ?.public_id) {
             const publicIds = product.images.map(img => img.public_id);
             await cloudinary.api.delete_resources(publicIds);
         }
