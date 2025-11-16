@@ -20,7 +20,8 @@ const categorySchema = new mongoose.Schema(
       default: null,
       validate: {
         validator: function (value) {
-          return value !== this._id; // prevent self reference
+          if (!value) return true; // prevent self reference
+          return !value.equal(this._id);
         },
         message: "Category cannot be its own parent",
       },

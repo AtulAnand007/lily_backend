@@ -6,26 +6,54 @@ import mongoose from "mongoose";
 // create category -- admin only
 export const createCategory = async (req, res) => {
   try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: Admins only",
+      });
+    }
+
     const { name, description, parentCategory, isActive } = req.body;
 
-    if(!name || typeof name !== "string"){
+    if (!name || typeof name !== "string") {
       return res.status(400).json({
         success: false,
-        message: "Category name is required."
-      })
+        message: "Category name is required.",
+      });
     }
 
     // check for duplicate category
-    const existing = await Category.findOne({ name: name.trim() });
+    const formattedName = name.trim().toLowerCase();
+    const existing = await Category.findOne({ name: formattedName });
     if (existing) {
       return res.status(409).json({
         success: false,
         message: "Category name must be unique",
       });
     }
+
+    // validate parentCategory ID
+    if (parentCategory && !mongoose.isValidObjectId(parentCategory)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid parent category ID",
+      });
+    }
+
+    // check parent exists
+    if (parentCategory) {
+      const parent = await Category.findById(parentCategory);
+      if (!parent) {
+        return res.status(400).json({
+          success: false,
+          message: "Parent category not found",
+        });
+      }
+    }
+
     const category = new Category({
-      name: name.trim(),
-      description: description?.trim() || "",
+      name: formattedName,
+      description: typeof description === "string" ? description.trim() : "",
       parentCategory: parentCategory || null,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -39,6 +67,7 @@ export const createCategory = async (req, res) => {
     }
 
     await category.save();
+
     logger.info(`Category created: ${category.name}`);
     res.status(201).json({
       success: true,
@@ -68,11 +97,61 @@ export const updateCategory = async (req, res) => {
     }
 
     // update fields
-    if (name) category.name = name;
-    if (description) category.description = description;
-    if (parentCategory !== undefined) category.parentCategory = parentCategory;
-    if (isActive !== undefined) category.isActive = isActive;
+    if (name !== undefined) {
+      const formattedName = name.trim().toLowerCase();
 
+      const existing = await Category.findOne({ name: formattedName });
+      if (existing && existing._id.toString() !== id) {
+        return res.status(409).json({
+          success: false,
+          message: "Category name already exists",
+        });
+      }
+
+      category.name = formattedName;
+    }
+
+    if (description !== undefined) {
+      category.description =
+        typeof description === "string"
+          ? description.trim()
+          : category.description;
+    }
+
+    if (parentCategory !== undefined) {
+      // prevent self-parenting
+      if (parentCategory === id) {
+        return res.status(400).json({
+          success: false,
+          message: "Category cannot be its own parent",
+        });
+      }
+
+      // validate ObjectId
+      if (parentCategory && !mongoose.isValidObjectId(parentCategory)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid parent category ID",
+        });
+      }
+
+      // ensure parent exists
+      if (parentCategory) {
+        const parent = await Category.findById(parentCategory);
+        if (!parent) {
+          return res.status(404).json({
+            success: false,
+            message: "Parent category not found",
+          });
+        }
+      }
+
+      category.parentCategory = parentCategory || null;
+    }
+
+    if (isActive !== undefined) {
+      category.isActive = isActive;
+    }
     // handle image update only if a new file was uploaded
     if (req.file?.path && req.file?.filename) {
       // delete old image if it exists
@@ -92,7 +171,7 @@ export const updateCategory = async (req, res) => {
       };
     }
 
-    await category.save({ validateBeforeSave: false });
+    await category.save();
 
     logger.info(`Category updated: ${category.name}`);
     res.status(200).json({
@@ -112,11 +191,11 @@ export const updateCategory = async (req, res) => {
 export const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    if(!mongoose.Types.ObjectId.isValid(id)){
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid category ID"
-      })
+        message: "Invalid category ID",
+      });
     }
 
     const category = await Category.findById(id);
@@ -126,13 +205,11 @@ export const deleteCategory = async (req, res) => {
         message: "Category not found",
       });
     }
-
-
   } catch (error) {
-    logger.error(`Error while deleting category: ${error.message}`)
+    logger.error(`Error while deleting category: ${error.message}`);
     res.status(500).json({
       success: false,
-      message: "Server error while deleting category"
-    })
+      message: "Server error while deleting category",
+    });
   }
 };
