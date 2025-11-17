@@ -199,7 +199,6 @@ export const updateUserPassword = async (req, res) => {
 };
 
 // update user email -- only for non google auth users
-
 export const updateUserEmail = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -347,3 +346,8 @@ export const verifyUpdatedEmail = async (req, res) => {
     });
   }
 };
+
+// get user orders 
+export const getUserOrders = async (req, res) => {
+  
+}

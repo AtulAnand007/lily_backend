@@ -3,6 +3,7 @@ import cloudinary from "../config/cloudinary.js"
 import logger from "../config/logger.js";
 import Product from "../models/product.model.js";
 import Order from "../models/order.model.js";
+
 export const getAllUser = async(req, res) => {
     try {
 
@@ -79,7 +80,7 @@ export const getUserdetail = async(req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" })
         }
-        logger.info("User fetched succesffully by admin");
+        logger.info("User fetched successfully by admin");
         return res.status(200).json({
             message: "User fetched successfully",
             user,
@@ -138,4 +139,9 @@ export const getDashboardOverview = async(req, res) => {
             message: "Failed to get dashboard overview",
         });
     }
+}
+
+// get all orders
+export const getAllOrders = async(req, res) => {
+    
 }

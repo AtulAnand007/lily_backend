@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 // create category -- admin only
 export const createCategory = async (req, res) => {
   try {
-    if (req.user.role !== "ADMIN") {
+    if (!req.user || req.user.role !== "ADMIN") {
       return res.status(403).json({
         success: false,
         message: "Access denied: Admins only",
@@ -77,7 +77,7 @@ export const createCategory = async (req, res) => {
     logger.error(`Error creating category: ${error.message}`);
     res.status(500).json({
       success: false,
-      message: "Internal Server error",
+      message: "Internal Server Error",
     });
   }
 };
@@ -85,6 +85,13 @@ export const createCategory = async (req, res) => {
 // update category -- only for admin
 export const updateCategory = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: Admins only",
+      });
+    }
+
     const { id } = req.params;
     const { name, description, parentCategory, isActive } = req.body;
 
@@ -190,6 +197,12 @@ export const updateCategory = async (req, res) => {
 // delete category -- admin only
 export const deleteCategory = async (req, res) => {
   try {
+    if (!req.user || req.user.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: Admins only",
+      });
+    }
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -200,16 +213,81 @@ export const deleteCategory = async (req, res) => {
 
     const category = await Category.findById(id);
     if (!category) {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         message: "Category not found",
       });
     }
+
+    category.isActive = false;
+    await category.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+      category,
+    });
   } catch (error) {
     logger.error(`Error while deleting category: ${error.message}`);
     res.status(500).json({
       success: false,
       message: "Server error while deleting category",
+    });
+  }
+};
+
+// get all categories -- for both admin & user
+export const getAllCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({
+      isActive: true,
+    }).select("-__v");
+    return res.status(200).json({
+      success: true,
+      message: "All categories fetched successfully",
+      data: categories,
+    });
+  } catch (error) {
+    logger.error(`Error while fetching all categories: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error while fetching all categories",
+    });
+  }
+};
+
+// get category by id -- for both admin & user
+export const getCategoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid category ID",
+      });
+    }
+
+    const category = await Category.findById(id)
+      .where({ isActive: true })
+      .select("-__v");
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Category fetched successfully",
+      data: category,
+    });
+  } catch (error) {
+    logger.error(`Error while fetching category: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error while fetching category",
     });
   }
 };
