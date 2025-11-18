@@ -1,44 +1,61 @@
 import { verifyAccessToken } from "../services/token.service.js";
 import User from "../models/user.model.js";
-import logger from "../config/logger.js"
+import logger from "../config/logger.js";
 
 export const authorizeRoles = (...roles) => {
-
-
-    return (req, res, next) => {
-        if (!req.user || !roles.includes(req.user.role)) {
-            return res.status(403).json({ message: "Forbidden: Access denied" });
-        }
-        next();
-    };
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: You do not have permission",
+      });
+    }
+    next();
+  };
 };
 
+export const authenticate = async (req, res, next) => {
+  try {
+    // it will for cookies
+    const token = req.cookies?.accessToken;
+    //now we will write for Authorization header
 
-export const authenticate = async(req, res, next) => {
-    try {
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer")
+      ? authHeader.split(" ")[1]
+      : null;
 
-        // it will for cookies 
-        const token = req.cookies ?.accessToken;
-        //now we will write for Authorization header
-
-        const authHeader = req.headers.authorization;
-        const bearerToken = authHeader ?.startsWith("Bearer") ? authHeader.split(" ")[1] : null;
-
-        const finalToken = token || bearerToken;
-        if (!finalToken) {
-            logger.warn(`Unauthorized request from ${req.ip} - no token`);
-            return res.status(401).json({ message: "No token provided" });
-        }
-
-        const decoded = verifyAccessToken(finalToken);
-
-        req.user = await User.findById(decoded.id).select("-password");
-        logger.info(`Authenticated user ${req.user.email} (${req.user._id})`);
-        next();
-
-
-    } catch (error) {
-        logger.error(`Authentication failed: ${error.message}`);
-        return res.status(401).json({ message: "Invalid or expired token" });
+    const finalToken = token || bearerToken;
+    if (!finalToken) {
+      logger.warn(`Unauthorized request from ${req.ip} - no token`);
+      return res.status(401).json({ message: "No token provided" });
     }
-}
+
+    const decoded = verifyAccessToken(finalToken);
+
+    if (!decoded || !decoded.id) {
+      logger.warn(`Token verification failed from: ${req.ip}`);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or malformed token",
+      });
+    }
+
+    // select is false for password -- so we don't need to explicitly remove that
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      logger.warn(`Token valid but user not found: ${decoded.id}`);
+      return res
+        .status(401)
+        .json({ success: false, message: "User no longer exists" });
+    }
+
+    req.user = user;
+    logger.info(`Authenticated user ${req.user.email} (${req.user._id})`);
+    next();
+  } catch (error) {
+    logger.error(`Authentication failed: ${error.message}`);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
