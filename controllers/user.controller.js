@@ -347,7 +347,3 @@ export const verifyUpdatedEmail = async (req, res) => {
   }
 };
 
-// get user orders 
-export const getUserOrders = async (req, res) => {
-  
-}

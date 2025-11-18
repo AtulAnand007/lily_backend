@@ -141,7 +141,3 @@ export const getDashboardOverview = async(req, res) => {
     }
 }
 
-// get all orders
-export const getAllOrders = async(req, res) => {
-    
-}

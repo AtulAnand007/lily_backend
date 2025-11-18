@@ -11,10 +11,12 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 import { upload } from "../middlewares/multer.middleware.js";
 
-router.get("/getUserDetail", authenticate, getUserDetail);
+// middleware use 
+router.use(authenticate);
+
+router.get("/getUserDetail", getUserDetail);
 router.post(
     "/upload-image",
-    authenticate,
     (req, res, next) => {
         req.uploadType = "users_profile";
         next()
@@ -22,8 +24,8 @@ router.post(
     upload.single("image"),
     uploadAndUpdateImage
 );
-router.put("/update-name", authenticate, updateUserName);
-router.put("/update-password", authenticate, updateUserPassword);
-router.put("/update-email", authenticate, updateUserEmail)
+router.put("/update-name", updateUserName);
+router.put("/update-password", updateUserPassword);
+router.put("/update-email", updateUserEmail)
 router.get("/verify-email-update", verifyUpdatedEmail);
 export default router;
