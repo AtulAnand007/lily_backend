@@ -21,7 +21,7 @@ export const authenticate = async (req, res, next) => {
     //now we will write for Authorization header
 
     const authHeader = req.headers.authorization;
-    const bearerToken = authHeader?.startsWith("Bearer")
+    const bearerToken = authHeader?.startsWith("Bearer ")
       ? authHeader.split(" ")[1]
       : null;
 
