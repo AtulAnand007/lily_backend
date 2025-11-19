@@ -25,7 +25,7 @@ export const cancelOrder = async (req, res) => {
 
 }
 
-// update order details -- Admin Only
+// update order status -- Admin Only
 export const updateOderStatus = async (req, res) => {
     
 }
