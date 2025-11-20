@@ -21,7 +21,7 @@ export const refreshCartPrices = async (cart) => {
     .map((item) => {
       const product = map.get(item.product.toString());
 
-      // 🔥 If product does not exist or inactive → remove from cart
+      //If product does not exist or inactive → remove from cart
       if (!product) return null;
 
       return {
