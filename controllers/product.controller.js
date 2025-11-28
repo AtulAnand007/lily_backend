@@ -63,7 +63,7 @@ export const updateProduct = async(req, res) => {
 
         if (req.file) {
 
-            if (product.images ?.length && product.images[0] ?.public_id) {
+            if (product.images ? .length && product.images[0] ? .public_id) {
                 await cloudinary.uploader.destroy(product.images[0].public_id);
             }
 
@@ -112,7 +112,7 @@ export const deleteProduct = async(req, res) => {
             }
         } */
 
-        if (product.images ?.length > 0 && product.images[0] ?.public_id) {
+        if (product.images ? .length > 0 && product.images[0] ? .public_id) {
             const publicIds = product.images.map(img => img.public_id);
             await cloudinary.api.delete_resources(publicIds);
         }
@@ -128,3 +128,83 @@ export const deleteProduct = async(req, res) => {
 
     }
 }
+
+export const gellAllProduct = async(req, res) => {
+    try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+
+        const search = req.query.search ? { name: { $regex: req.query.search, $options: "i" } } : {};
+
+
+        let filter = {};
+
+        if (req.query.category) {
+            filter.category = req.query.category;
+        }
+
+        if (req.query.minPrice || req.query.maxPrice) {
+            filter.price = {};
+
+            if (req.query.minPrice) {
+                filter.price.$gte = Number(req.query.minPrice);
+            }
+
+            if (req.query.maxPrice) {
+                filter.price.$lte = Number(req.query.maxPrice); // ⬅️ FIXED
+            }
+        }
+
+
+        let sort = {};
+
+        if (req.query.sortBy) {
+            switch (req.query.sortBy) {
+                case "price_low":
+                    sort.price = 1;
+                    break;
+                case "price_high":
+                    sort.price = -1;
+                    break;
+                case "newest":
+                    sort.createdAt = -1;
+                    break;
+                case "oldest":
+                    sort.createdAt = 1;
+                    break;
+                case "rating":
+                    sort.rating = -1;
+                    break;
+            }
+        }
+
+
+        const products = await Product.find({
+                ...search,
+                ...filter,
+            })
+            .sort(sort)
+            .skip(skip)
+            .limit(limit);
+
+
+        const total = await Product.countDocuments({
+            ...search,
+            ...filter,
+        });
+
+        return res.status(200).json({
+            success: true,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+            results: products.length,
+            products,
+        });
+    } catch (error) {
+        logger.error("Fetching products failed", { message: error.message });
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
