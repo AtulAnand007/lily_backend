@@ -208,3 +208,24 @@ export const gellAllProduct = async(req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+
+export const getProductById = async(req, res) => {
+    try {
+        const pid = req.params.id;
+        const product = await Product.findById(pid);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+        logger.info("Product fetched successfully");
+
+        return res.staus(200).json({
+            success: true,
+            product
+        });
+
+    } catch (error) {
+        logger.error("Fetching product failed", { message: error.message });
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}

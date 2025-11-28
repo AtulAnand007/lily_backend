@@ -4,6 +4,7 @@ import logger from './config/logger.js';
 import connectDB from './config/db.js';
 import authRouters from './routes/auth.route.js';
 import userRoutes from './routes/user.route.js';
+import productRoutes from './routes/product.route.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { connectRedis } from './config/redis.js';
@@ -34,6 +35,7 @@ app.use(cors({
 app.use("/api/auth", authRouters);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/product", productRoutes);
 
 
 // server setup 
