@@ -153,7 +153,7 @@ export const gellAllProduct = async(req, res) => {
             }
 
             if (req.query.maxPrice) {
-                filter.price.$lte = Number(req.query.maxPrice); // ⬅️ FIXED
+                filter.price.$lte = Number(req.query.maxPrice);
             }
         }
 
