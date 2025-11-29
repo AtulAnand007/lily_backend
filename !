@@ -1,0 +1,25 @@
+t
+
+
+ "fixed some errors"
+ 
+
+
+
+
+
+
+
+ abort
+ # abort
+Add product routes and controllers with image upload fixes
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch main
+# Your branch is up to date with 'origin/main'.
+#
+# Changes to be committed:
+#	modified:   routes/product.route.js
+#
