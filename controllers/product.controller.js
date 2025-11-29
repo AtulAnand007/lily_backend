@@ -219,7 +219,7 @@ export const getProductById = async(req, res) => {
         }
         logger.info("Product fetched successfully");
 
-        return res.staus(200).json({
+        return res.status(200).json({
             success: true,
             product
         });
@@ -245,12 +245,12 @@ export const updateProductImage = async(req, res) => {
 
         if (!req.file) {
             return res.status(400).json({ message: "No image uploaded" });
-        } else {
-            if (product.images ? .length > 0 && product.images[0] ? .public_id) {
-                await cloudinary.uploader.destroy(product.images[0].public_id);
-            }
         }
 
+
+        if (product.images ? .length > 0 && product.images[0] ? .public_id) {
+            await cloudinary.uploader.destroy(product.images[0].public_id);
+        }
 
         product.images = [{
             url: req.file.path,
