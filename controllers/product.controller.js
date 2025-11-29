@@ -229,3 +229,44 @@ export const getProductById = async(req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 }
+
+
+export const updateProductImage = async(req, res) => {
+    try {
+        if (req.user.role !== "ADMIN") {
+            return res.status(403).json({ message: "Access denied: Admins only" });
+        }
+        const pid = req.params.id;
+        const product = await Product.findById(pid);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product is not found" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No image uploaded" });
+        } else {
+            if (product.images ? .length > 0 && product.images[0] ? .public_id) {
+                await cloudinary.uploader.destroy(product.images[0].public_id);
+            }
+        }
+
+
+        product.images = [{
+            url: req.file.path,
+            public_id: req.file.filename,
+        }];
+
+        await product.save();
+        logger.info("Product image updated successfully");
+
+        res.status(200).json({
+            message: "Product image updated successfully",
+            product,
+        });
+
+    } catch (error) {
+        logger.error("Product image update failed", { message: error.message });
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
