@@ -1,5 +1,6 @@
 import Order from "../models/order.model.js";
 import logger from "../config/logger.js";
+import mongoose from "mongoose";
 
 
 // get all order admin only
@@ -37,7 +38,28 @@ export const getUserOrders = async(req, res) => {
 
 // get order by ID
 export const getOrderById = async(req, res) => {
+    try {
 
+        const orderId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({ message: "Invalid order ID" });
+        }
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: "Order does not exist" });
+        }
+
+        return res.status(200).json({
+            success: true,
+            order,
+            message: "Order fetched successfully"
+        })
+
+    } catch (error) {
+        logger.error("Order fetched by id failed", { message: error.message });
+        return res.status(500).json({ message: "Internal Server error" });
+    }
 }
 
 // create order 
