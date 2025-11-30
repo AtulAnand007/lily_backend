@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticate, authorizeRoles } from '../middlewares/auth.middleware.js';
-import { getAllOrders, getOrderById } from '../controllers/order.controller.js';
+import { getAllOrders, getOrderById, getUserOrders } from '../controllers/order.controller.js';
 
 const router = express.Router();
 
@@ -8,8 +8,10 @@ const router = express.Router();
 router.get("/:id", getOrderById);
 
 
-// for admin only 
+
 router.use(authenticate);
+
+router.get("/UserOrder", getUserOrders);
 router.use(authorizeRoles("ADMIN"));
 
 router.get("/allorder", getAllOrders);

@@ -33,8 +33,28 @@ export const getAllOrders = async(req, res) => {
 
 // get all user orders -- for specific User only
 export const getUserOrders = async(req, res) => {
+    try {
+        const userId = req.user._id;
 
-}
+        const orders = await Order.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        logger.info(`User orders fetched successfully for ${userId}`);
+
+        return res.status(200).json({
+            success: true,
+            orders,
+            count: orders.length,
+            message: "User orders fetched successfully"
+        });
+
+    } catch (error) {
+        logger.error("Get user orders failed", { message: error.message });
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 
 // get order by ID
 export const getOrderById = async(req, res) => {
